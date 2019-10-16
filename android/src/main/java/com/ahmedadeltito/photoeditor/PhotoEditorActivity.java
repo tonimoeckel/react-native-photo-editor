@@ -7,9 +7,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Typeface;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -131,11 +134,14 @@ public class PhotoEditorActivity extends AppCompatActivity implements View.OnCli
         topShadowRelativeLayout = (RelativeLayout) findViewById(R.id.top_parent_rl);
         bottomShadow = findViewById(R.id.bottom_shadow);
         bottomShadowRelativeLayout = (RelativeLayout) findViewById(R.id.bottom_parent_rl);
+        photoEditImageView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
         ViewPager pager = (ViewPager) findViewById(R.id.image_emoji_view_pager);
         PageIndicator indicator = (PageIndicator) findViewById(R.id.image_emoji_indicator);
 
-        photoEditImageView.setImageBitmap(bitmap);
+        int rotateImage = getCameraPhotoOrientation(selectedImagePath);
+        Bitmap rotateBitmap = RotateBitmap(bitmap, rotateImage);
+        photoEditImageView.setImageBitmap(rotateBitmap);
 
         closeTextView.setTypeface(newFont);
         addTextView.setTypeface(newFont);
@@ -274,6 +280,41 @@ public class PhotoEditorActivity extends AppCompatActivity implements View.OnCli
                 addCropTextView.setVisibility(View.INVISIBLE);
             }
         }
+    }
+
+    public int getCameraPhotoOrientation(String imagePath){
+        int rotate = 0;
+        try {
+            File imageFile = new File(imagePath);
+
+            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    rotate = 270;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    rotate = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    rotate = 90;
+                    break;
+            }
+
+            Log.i("RotateImage", "Exif orientation: " + orientation);
+            Log.i("RotateImage", "Rotate value: " + rotate);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rotate;
+    }
+
+    public static Bitmap RotateBitmap(Bitmap source, float angle)
+    {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
     private boolean stringIsNotEmpty(String string) {
@@ -733,7 +774,9 @@ public class PhotoEditorActivity extends AppCompatActivity implements View.OnCli
                     try {
                         selectedImagePath = resultUri.toString();
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver() , resultUri);
-                        photoEditImageView.setImageBitmap(bitmap);
+                        int rotateImage = getCameraPhotoOrientation(selectedImagePath);
+                        Bitmap rotateBitmap = RotateBitmap(bitmap, rotateImage);
+                        photoEditImageView.setImageBitmap(rotateBitmap);
                     } catch (Exception ex) {
                         System.out.println("NO IMAGE DATA FOUND");
                     }
