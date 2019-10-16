@@ -85,7 +85,9 @@ RCT_EXPORT_METHOD(Edit:(nonnull NSDictionary *)props onDone:(RCTResponseSenderBl
 
         // Invoke Editor
         photoEditor.photoEditorDelegate = self;
-        [photoEditor setModalPresentationStyle: UIModalPresentationFullScreen];
+        if (@available(iOS 13, *)) {
+            [photoEditor setModalPresentationStyle: UIModalPresentationFullScreen];
+        }
         id<UIApplicationDelegate> app = [[UIApplication sharedApplication] delegate];
         [((UINavigationController*) app.window.rootViewController) presentViewController:photoEditor animated:YES completion:nil];
     });
